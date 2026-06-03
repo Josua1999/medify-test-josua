@@ -2,11 +2,13 @@
 
 @section('content')
 <div class="container">
-    <div class="row justify-content-center">
+    <div class="justify-content-center row">
         <div class="col-md-8">
-            <div class="form-group mb-2">
-                <a href="{{url('master-items/form/new')}}" class="btn btn-secondary">+ Master Items Baru</a>
-            </div>
+            <div class="form-group d-flex justify-content-between mb-2">
+    <a href="{{url('master-items/form/new')}}" class="btn btn-secondary">+ Master Items Baru</a>
+    <a href="{{url('master-items/download-excel')}}" class="btn btn-success">Download Excel</a>
+</div>
+
             <div class="card">
                 <div class="card-header">Daftar Master Items</div>
 

@@ -1,4 +1,4 @@
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
     @csrf
     @if($method == 'edit')
     <div class="form-group">
@@ -47,7 +47,34 @@
             <option @if($selected == 'ATK') selected @endif>ATK</option>
         </select>
     </div>
+    <div class="form-group mb-3">
+    <label>Kategori Barang</label>
+    <div class="p-3 card">
+        @foreach($kategoris as $kategori)
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="kategori_ids[]" value="{{ $kategori->id }}" id="kategori_{{ $kategori->id }}"
+                    @if(in_array($kategori->id, $item_kategoris)) checked @endif>
+                <label class="form-check-label" for="kategori_{{ $kategori->id }}">
+                    {{ $kategori->nama }} ({{ $kategori->kode }})
+                </label>
+            </div>
+        @endforeach
+        @if($kategoris->isEmpty())
+            <span class="text-muted small">Belum ada kategori. Silakan <a href="{{ url('kategoris/form/new') }}" target="_blank">buat kategori baru</a> terlebih dahulu.</span>
+        @endif
+    </div>
+</div>
 
-    <button class="btn btn-primary mt-3">Submit</button>
+ <div class="form-group mb-3">
+     <label>Foto Barang</label>
+     <input type="file" class="form-control" name="foto" accept="image/*">
+     @if(!empty($item->foto))
+         <div class="mt-2">
+             <img src="{{ asset($item->foto) }}" alt="Foto Barang" style="max-height: 100px;" class="img-thumbnail">
+         </div>
+     @endif
+ </div>
+
+    <button class="mt-3 btn btn-primary">Submit</button>
 
 </form>

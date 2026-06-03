@@ -26,6 +26,7 @@ class MasterItemsController extends Controller
         if (!empty($hargamin)) $data_search = $data_search->where('harga_beli', '>=', $hargamin);
         if (!empty($hargamax)) $data_search = $data_search->where('harga_beli', '<=', $hargamax);
 
+
         $data_search = $data_search->select('kode', 'nama', 'jenis', 'harga_beli', 'laba', 'supplier')->orderBy('id')->get();
 
 
@@ -35,23 +36,27 @@ class MasterItemsController extends Controller
         ]);
     }
 
-    public function formView($method, $id = 0)
-    {
-        if ($method == 'new') {
-            $item = [];
-        } else {
-            $item = MasterItem::find($id);
-        }
-        $data['item'] = $item;
-        $data['method'] = $method;
-        return view('master_items.form.index', $data);
+    public function formView($method, $id = 0) {
+    if ($method == 'new') {
+        $item = new MasterItem;
+        $item_kategoris = [];
+    } else {
+        $item = MasterItem::with('kategoris')->find($id);
+        $item_kategoris = $item->kategoris->pluck('id')->toArray();
     }
+    $data['item'] = $item;
+    $data['method'] = $method;
+    $data['kategoris'] = \App\Models\Kategori::all();
+    $data['item_kategoris'] = $item_kategoris;
+    return view('master_items.form.index', $data);
+}
 
-    public function singleView($kode)
-    {
-        $data['data'] = MasterItem::where('kode', $kode)->first();
-        return view('master_items.single.index', $data);
-    }
+
+    public function singleView($kode) {
+    $data['data'] = MasterItem::with('kategoris')->where('kode', $kode)->first();
+    return view('master_items.single.index', $data);
+}
+
 
     public function formSubmit(Request $request, $method, $id = 0)
     {
@@ -72,15 +77,69 @@ class MasterItemsController extends Controller
         $data_item->kode = $kode;
         $data_item->supplier = $request->supplier;
         $data_item->jenis = $request->jenis;
+                // Upload Foto
+        if ($request->hasFile('foto')) {
+            $file = $request->file('foto');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads'), $filename);
+            $data_item->foto = 'uploads/' . $filename;
+        }
+
         $data_item->save();
+
+// Simpan Relasi Kategori (Many-to-Many)
+if ($request->has('kategori_ids')) {
+    $data_item->kategoris()->sync($request->kategori_ids);
+} else {
+    $data_item->kategoris()->detach();
+}
 
         return redirect('master-items');
     }
 
-    public function delete($id)
-    {
-        MasterItem::find($id)->delete();
+    public function delete($id) {
+        $item = MasterItem::find($id);
+        if ($item) {
+            $item->kategoris()->detach();
+            $item->delete();
+        }
         return redirect('master-items');
+    }
+
+    public function downloadExcel() {
+        $items = MasterItem::with('kategoris')->get();
+        
+        $html = '
+        <table border="1">
+            <tr>
+                <th>No</th>
+                <th>Nama kategori</th>
+                <th>Nama items</th>
+                <th>Nama supplier</th>
+                <th>Harga</th>
+                <th>Laba</th>
+                <th>Harga jual</th>
+            </tr>';
+            
+        foreach ($items as $key => $item) {
+            $kategoris = $item->kategoris->pluck('nama')->implode(', ');
+            $hargaJual = round($item->harga_beli + ($item->harga_beli * $item->laba / 100));
+            $html .= '
+            <tr>
+                <td>' . ($key + 1) . '</td>
+                <td>' . htmlspecialchars($kategoris ?: '-') . '</td>
+                <td>' . htmlspecialchars($item->nama) . '</td>
+                <td>' . htmlspecialchars($item->supplier) . '</td>
+                <td>' . $item->harga_beli . '</td>
+                <td>' . $item->laba . '%' . '</td>
+                <td>' . $hargaJual . '</td>
+            </tr>';
+        }
+        $html .= '</table>';
+        
+        return response($html)
+            ->header('Content-Type', 'application/vnd.ms-excel')
+            ->header('Content-Disposition', 'attachment; filename="master_items.xls"');
     }
 
     public function updateRandomData()
