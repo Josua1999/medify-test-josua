@@ -23,7 +23,8 @@ class MasterItemsController extends Controller
 
         if (!empty($kode)) $data_search = $data_search->where('kode', $kode);
         if (!empty($nama)) $data_search = $data_search->where('nama', 'LIKE', '%' . $nama . '%');
-        if (!empty($hargamin)) $data_search = $data_search->where('harga_beli', '>=', $hargamin)->where('harga_beli', '<=', $hargamax);
+        if (!empty($hargamin)) $data_search = $data_search->where('harga_beli', '>=', $hargamin);
+        if (!empty($hargamax)) $data_search = $data_search->where('harga_beli', '<=', $hargamax);
 
         $data_search = $data_search->select('kode', 'nama', 'jenis', 'harga_beli', 'laba', 'supplier')->orderBy('id')->get();
 
@@ -56,10 +57,10 @@ class MasterItemsController extends Controller
     {
         if ($method == 'new') {
             $data_item = new MasterItem;
-            $kode = MasterItem::count('id');
-            $kode = $kode + 1;
+            $maxId = MasterItem::max('id') ?? 0;
+            $kode = $maxId + 1;
             $kode = str_pad($kode, 5, '0', STR_PAD_LEFT);
-            sleep(3);
+            // sleep(3); // Di-comment agar penyimpanan data menjadi instan dan responsif
         } else {
             $data_item = MasterItem::find($id);
             $kode = $data_item->kode;
